@@ -1,32 +1,45 @@
 <script setup>
-import { reactive, ref, provide } from "vue";
+import { provide, reactive, defineEmits } from "vue";
 
-const values = ref(props.initialValues);
+const props = defineProps({
+  initialValues: {
+    type: Object,
+    default: {},
+  },
+  validate: {
+    type: Function,
+    default: null,
+  },
+});
 
-const errors = reactive({});
+const emit = defineEmits(["onSubmit"]);
 
-const isSubmitting = ref(false);
+const state = reactive({
+  values: props.initialValues,
+  errors: {},
+  isSubmitting: false,
+  handleSubmit: async (e) => {
+    state.isSubmitting = true;
+    state.errors = await props.validate(state.values);
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-  const [valuesForm, errorsForm] = [values.value, props.validate(values.value)];
-  if (Object.keys(errors).length) {
-    errors.value = errorsForm;
-  } else {
-    this.isSubmitting = true;
-    props.onSubmit(values);
-  }
-  values[e.target.name] = e.target.value;
-};
+    if (Object.keys(state.errors).length === 0) {
+      emit("onSubmit", state.values);
+    }
+    state.isSubmitting = false;
+  },
+  updateValue: (name, value) => {
+    state.values[name] = value;
+  },
+});
 
-provide("values", values);
+provide("data", state);
+
 </script>
 
 <template>
-  <slot
-    :values="values"
-    :errors="errors"
-    :handleSubmit="handleSubmit"
-    :isSubmitting="isSubmitting"
-  ></slot>
+  <form @submit.prevent="state.handleSubmit">
+    <slot :values="state.values" :errors="state.errors" :handleSubmit="state.handleSubmit"
+      :isSubmitting="state.isSubmitting">
+    </slot>
+  </form>
 </template>
