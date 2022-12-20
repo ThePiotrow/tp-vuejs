@@ -4,8 +4,6 @@ import Field from "./components/Field.vue"
 const initialValues = {
   email: "johndoe@example.com",
   password: "",
-  adult: false,
-  gender: "",
 };
 const validate = (values) => {
   const pwdRegexp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/;
@@ -14,43 +12,39 @@ const validate = (values) => {
   const errors = {}
   if (!values.email) {
     errors.email = "Aucun email renseigné";
+  } else {
+    if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(values.email)) {
+      errors.email = "L'email n'est pas valide";
+    }
   }
+  
   if (!values.password) {
-    errors.password = "Aucun mot de passe renseigné";
-  }
-  if (!pwdRegexp.test(values.password)) {
-    const isNumbers = (str) => {
-      return /\d/.test(str);
-    };
+    errors.password = ["Aucun mot de passe renseigné"];
+  } else {
+    if (!pwdRegexp.test(values.password)) {
+      const pwdErrors = [];
+      if (!/\d/.test(values.password)) { // hasNumeric
+        pwdErrors.push("Le mot de passe doit contenir au moins un chiffre.");
+      }
+      if (!/[a-z]/.test(values.password)) { // hasLowercase
+        pwdErrors.push("Le mot de passe doit contenir au moins une minuscule.");
+      }
+      if (!/[A-Z]/.test(values.password)) { // hasUppercase
+        pwdErrors.push("Le mot de passe doit contenir au moins une majuscule.");
+      }
 
-    const isLowercase = (str) => {
-      return /[a-z]/.test(str);
-    };
-
-    const isUppercase = (str) => {
-      return /[A-Z]/.test(str);
-    };
-
-    const errors = [];
-    if (!isNumbers(values.password)) {
-      errors.push("Le mot de passe doit contenir au moins un chiffre");
+      errors.password = pwdErrors;
     }
-    if (!isLowercase(values.password)) {
-      errors.push("Le mot de passe doit contenir au moins une minuscule");
-    }
-    if (!isUppercase(values.password)) {
-      errors.push("Le mot de passe doit contenir au moins une majuscule");
-    }
-
-    console.log(errors);
-
-    errors.password = errors.join("\n");
   }
   return errors;
 };
 
-const handleSubmit = (values) => {
-  alert(values);
+const onSubmit = (data) => {
+  let result = [];
+  for (const [key, value] of Object.entries(data)) {
+    result.push(`${key}: ${value}`);
+  }
+  alert(result.join("\n"));
 }
 </script>
 
@@ -60,20 +54,19 @@ const handleSubmit = (values) => {
     v-slot="{
       values,
       errors,
-      handleSubmit,
       isSubmitting,
+      handleSubmit,
     }" 
     :initialValues="initialValues" 
     :validate="validate"
+    @submit="onSubmit"
   >
-    <label for="email">Email :</label>
-    <Field name="email" />
-    <span>{{ errors.email }}</span>
-
-    <label for="password">Mot de passe :</label>
-    <Field name="password" type="password" />
-    <span>{{ errors.password }}</span>
+    <Field name="email" label="Email :" />
     
-    <button @click="handleSubmit" :disabled="isSubmitting">Envoyer</button>
+    <Field name="password" type="password" label="Mot de passe :" />
+    
+    <Field name="description" :as="'textarea'" label="Description"/>
+    <br>
+    <button :disabled="isSubmitting">Envoyer</button>
   </Formik>
 </template>

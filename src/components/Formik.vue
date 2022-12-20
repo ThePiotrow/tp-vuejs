@@ -10,9 +10,12 @@ const props = defineProps({
     type: Function,
     default: null,
   },
+  onSubmit: {
+    type: Function,
+    required: true,
+  },
 });
 
-const emit = defineEmits(["onSubmit"]);
 
 const state = reactive({
   values: props.initialValues,
@@ -21,10 +24,10 @@ const state = reactive({
   handleSubmit: async (e) => {
     state.isSubmitting = true;
     state.errors = await props.validate(state.values);
+    
+    if (Object.keys(state.errors).length === 0)
+      props.onSubmit(state.values)
 
-    if (Object.keys(state.errors).length === 0) {
-      emit("onSubmit", state.values);
-    }
     state.isSubmitting = false;
   },
   updateValue: (name, value) => {
@@ -38,8 +41,11 @@ provide("data", state);
 
 <template>
   <form @submit.prevent="state.handleSubmit">
-    <slot :values="state.values" :errors="state.errors" :handleSubmit="state.handleSubmit"
-      :isSubmitting="state.isSubmitting">
+    <slot 
+      :values="state.values" 
+      :errors="state.errors" 
+      :isSubmitting="state.isSubmitting"
+    >
     </slot>
   </form>
 </template>
